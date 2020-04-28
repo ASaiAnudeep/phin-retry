@@ -1,0 +1,29 @@
+{
+  "name": "phin-retry",
+  "version": "1.0.0",
+  "description": "The ultra-lightweight Node.js HTTP client",
+  "main": "src/index.js",
+  "files": [
+    "/src"
+  ],
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/ASaiAnudeep/phin-retry.git"
+  },
+  "keywords": [],
+  "author": "Anudeep <asa.anudeep4@gmail.com>",
+  "license": "MIT",
+  "bugs": {
+    "url": "https://github.com/ASaiAnudeep/phin-retry/issues"
+  },
+  "homepage": "https://github.com/ASaiAnudeep/phin-retry#readme",
+  "dependencies": {
+    "phin": "^3.4.1"
+  },
+  "engines": {
+    "node": ">=8"
+  }
+}
