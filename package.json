@@ -13,7 +13,19 @@
     "type": "git",
     "url": "git+https://github.com/ASaiAnudeep/phin-retry.git"
   },
-  "keywords": [],
+  "keywords": [
+    "phin",
+    "http",
+    "https",
+    "request",
+    "request-promise",
+    "ajax",
+    "url",
+    "uri",
+    "fetch",
+    "retry",
+    "delay"
+  ],
   "author": "Anudeep <asa.anudeep4@gmail.com>",
   "license": "MIT",
   "bugs": {
