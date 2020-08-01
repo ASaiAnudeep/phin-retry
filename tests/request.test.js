@@ -51,7 +51,7 @@ test('GET - with default retry & custom delay', async () => {
       }
     }
   });
-  const response = await request.get({ 
+  const response = await request.get({
     url: 'http://localhost:9393/api/get',
     delay: 1
   });
@@ -83,7 +83,7 @@ test('GET - with qs & custom retry & delay', async () => {
       }
     }
   });
-  const response = await request.get({ 
+  const response = await request.get({
     url: 'http://localhost:9393/api/get',
     qs: {
       user: 'bob',
@@ -277,6 +277,82 @@ test('GET - 500 response', async () => {
   assert.equal(response.statusCode, 500);
   assert.equal(response.statusMessage, 'Internal Server Error');
   assert.equal(response.body, 'error');
+});
+
+test('GET - 400 client error - should not retry', async () => {
+  request.defaults.delay = 1;
+  pactum.mock.addDefaultMockInteraction({
+    withRequest: {
+      method: 'GET',
+      path: '/api/get'
+    },
+    willRespondWith: {
+      onCall: {
+        0: {
+          status: 400,
+          body: 'error'
+        }
+      }
+    }
+  });
+  let response;
+  try {
+    await request.get('http://localhost:9393/api/get');
+  } catch (error) {
+    response = error;
+  }
+  assert.equal(response.name, 'StatusCodeError');
+  assert.equal(response.statusCode, 400);
+  assert.equal(response.statusMessage, 'Bad Request');
+  assert.equal(response.body, 'error');
+});
+
+test('GET - 400 client error - custom retry strategy', async () => {
+  request.defaults.delay = 1;
+  pactum.mock.addDefaultMockInteraction({
+    withRequest: {
+      method: 'GET',
+      path: '/api/get'
+    },
+    willRespondWith: {
+      onCall: {
+        0: {
+          status: 400,
+          body: 'error'
+        }
+      }
+    }
+  });
+  let response;
+  try {
+    await request.get({
+      url: 'http://localhost:9393/api/get',
+      retryStrategy: () => true
+    });
+  } catch (error) {
+    response = error;
+  }
+  assert.equal(response.name, 'StatusCodeError');
+  assert.equal(response.statusCode, 404);
+  assert.equal(response.statusMessage, 'Not Found');
+});
+
+test('GET - custom error strategy', async () => {
+  pactum.mock.addDefaultMockInteraction({
+    withRequest: {
+      method: 'GET',
+      path: '/api/get'
+    },
+    willRespondWith: {
+      status: 401,
+      body: 'output'
+    }
+  });
+  const response = await request.get({
+    url: 'http://localhost:9393/api/get',
+    errorStrategy: () => false
+  });
+  assert.equal(response, 'output');
 });
 
 test('Network Error', async () => {

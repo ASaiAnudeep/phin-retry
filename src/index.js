@@ -4,6 +4,8 @@ const phin = require('phin');
  * @typedef {object} WrapperOptions
  * @property {number} [retry] - max retries on failures - defaults to 1
  * @property {number} [delay] - delay in ms between retries - defaults to 100ms
+ * @property {function} [retryStrategy] - custom retry strategy function
+ * @property {function} [errorStrategy] - custom error strategy function
  * @property {object} [qs] - key-value pairs of query parameters
  * @property {object} [auth] - auth object
  * @property {string} auth.user - auth user
@@ -85,19 +87,19 @@ const helper = {
   },
 
   retry(options) {
-    if (typeof options.retry === 'number') {
-      return options.retry;
-    } else {
-      return defaults.retry;
-    }
+    return typeof options.retry === 'number' ? options.retry : defaults.retry;
   },
 
   delay(options) {
-    if (typeof options.delay === 'number') {
-      return options.delay;
-    } else {
-      return defaults.delay;
-    }
+    return typeof options.delay === 'number' ? options.delay : defaults.delay;
+  },
+
+  retryStrategy(options) {
+    return typeof options.retryStrategy === 'function' ? options.retryStrategy : defaults.retryStrategy;
+  },
+
+  errorStrategy(options) {
+    return typeof options.errorStrategy === 'function' ? options.errorStrategy : defaults.errorStrategy;
   },
 
   qs(options) {
@@ -136,23 +138,29 @@ const helper = {
     delete options.qs;
     delete options.auth;
     delete options.body;
+    delete options.retryStrategy;
+    delete options.errorStrategy;
   },
 
   init(options) {
     const retry = helper.retry(options);
     const delay = helper.delay(options);
+    const retryStrategy = helper.retryStrategy(options);
+    const errorStrategy = helper.errorStrategy(options);
     const fullResponse = options.fullResponse || false;
     helper.qs(options);
     helper.auth(options);
     helper.body(options);
     helper.delete(options);
-    return { retry, delay, fullResponse };
+    return { retry, delay, fullResponse, retryStrategy, errorStrategy };
   },
 
-  updateOptions(options, retry, delay, fullResponse) {
+  updateOptions(options, retry, delay, fullResponse, retryStrategy, errorStrategy) {
     options.retry = retry - 1;
     options.delay = delay;
     options.fullResponse = fullResponse;
+    options.retryStrategy = retryStrategy;
+    options.errorStrategy = errorStrategy;
   },
 
   reject(response, error, full) {
@@ -227,19 +235,19 @@ const request = {
 
   async __fetch(opts) {
     const options = typeof opts === 'string' ? { url: opts, method: 'GET' } : opts;
-    const { retry, delay, fullResponse } = helper.init(options);
+    const { retry, delay, fullResponse, retryStrategy, errorStrategy } = helper.init(options);
     let res, err;
     try {
       res = await phin(options);
     } catch (error) {
       err = error;
     }
-    if (this.defaults.retryStrategy(res, err, options) && retry > 0) {
-      helper.updateOptions(options, retry, delay, fullResponse);
+    if (retryStrategy(res, err, options) && retry > 0) {
+      helper.updateOptions(options, retry, delay, fullResponse, retryStrategy, errorStrategy);
       await helper.sleep(delay);
       return this[options.method.toLowerCase()](options);
     }
-    if (this.defaults.errorStrategy(res, err, options)) {
+    if (errorStrategy(res, err, options)) {
       return helper.reject(res, err, fullResponse);
     } else {
       return helper.resolve(res, fullResponse);
