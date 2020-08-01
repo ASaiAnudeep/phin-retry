@@ -1,13 +1,14 @@
 {
   "name": "phin-retry",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "description": "The ultra-lightweight Node.js HTTP client",
   "main": "src/index.js",
   "files": [
     "/src"
   ],
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "test": "uvu tests",
+    "coverage": "c8 --include=src npm test && c8 report --reporter=text-lcov > coverage/lcov.info"
   },
   "repository": {
     "type": "git",
@@ -37,5 +38,10 @@
   },
   "engines": {
     "node": ">=8"
+  },
+  "devDependencies": {
+    "c8": "^7.2.1",
+    "pactum": "^1.0.26",
+    "uvu": "^0.3.1"
   }
 }

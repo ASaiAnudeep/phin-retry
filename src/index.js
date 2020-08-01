@@ -4,6 +4,9 @@ const phin = require('phin');
  * @typedef {object} WrapperOptions
  * @property {number} [retry] - max retries on failures - defaults to 1
  * @property {number} [delay] - delay in ms between retries - defaults to 100ms
+ * @property {function} [retryStrategy] - custom retry strategy function
+ * @property {function} [delayStrategy] - custom delay strategy function
+ * @property {function} [errorStrategy] - custom error strategy function
  * @property {object} [qs] - key-value pairs of query parameters
  * @property {object} [auth] - auth object
  * @property {string} auth.user - auth user
@@ -17,15 +20,58 @@ const phin = require('phin');
  */
 
 class StatusCodeError extends Error {
-  constructor(response) {
-    super(response.statusCode + `${response.statusMessage ? ` - ${response.statusMessage}` : ''}`);
+  constructor(response, fullResponse) {
+    const message = response.statusMessage ? response.statusMessag : '';
+    super(`${response.statusCode} - ${message}`);
     this.name = this.constructor.name;
     this.statusCode = response.statusCode;
+    this.statusMessage = response.statusMessage;
+    this.body = helper.json(response.body);
+    if (fullResponse) {
+      this.response = response;
+    }
   }
 }
 
-const DEFAULT_RETRY = 1;
-const DEFAULT_DELAY = 100;
+const strategies = {
+  
+  retry(response, error) {
+    if (error) {
+      return true;
+    }
+    if (response.statusCode >= 500) {
+      return true;
+    }
+    return false;
+  },
+
+  delay(response, error, options, delay) {
+    if (error && delay === defaults.delay) {
+      return defaults.networkErrorDelay;
+    }
+    return delay;
+  },
+
+  error(response, error) {
+    if (error) {
+      return true;
+    }
+    if (response.statusCode < 200 || response.statusCode >= 300) {
+      return true;
+    }
+    return false;
+  }
+
+};
+
+const defaults = {
+  retry: 1,
+  delay: 100,
+  networkErrorDelay: 1000,
+  retryStrategy: strategies.retry,
+  delayStrategy: strategies.delay,
+  errorStrategy: strategies.error
+};
 
 const helper = {
 
@@ -36,9 +82,8 @@ const helper = {
   string(buffer) {
     if (buffer instanceof Buffer) {
       return buffer.toString();
-    } else {
-      return buffer;
     }
+    return buffer;
   },
 
   json(data) {
@@ -51,23 +96,23 @@ const helper = {
   },
 
   retry(options) {
-    if (typeof options.retry === 'number') {
-      return options.retry;
-    } else if (typeof process.env.PHIN_RETRY === 'number') {
-      return process.env.PHIN_RETRY;
-    } else {
-      return DEFAULT_RETRY;
-    }
+    return typeof options.retry === 'number' ? options.retry : defaults.retry;
   },
 
   delay(options) {
-    if (typeof options.delay === 'number') {
-      return options.delay;
-    } else if (typeof process.env.PHIN_DELAY === 'number') {
-      return process.env.PHIN_DELAY;
-    } else {
-      return DEFAULT_DELAY;
-    }
+    return typeof options.delay === 'number' ? options.delay : defaults.delay;
+  },
+
+  retryStrategy(options) {
+    return typeof options.retryStrategy === 'function' ? options.retryStrategy : defaults.retryStrategy;
+  },
+
+  delayStrategy(options) {
+    return typeof options.delayStrategy === 'function' ? options.delayStrategy : defaults.delayStrategy;
+  },
+
+  errorStrategy(options) {
+    return typeof options.errorStrategy === 'function' ? options.errorStrategy : defaults.errorStrategy;
   },
 
   qs(options) {
@@ -106,29 +151,61 @@ const helper = {
     delete options.qs;
     delete options.auth;
     delete options.body;
+    delete options.retryStrategy;
+    delete options.delayStrategy;
+    delete options.errorStrategy;
   },
 
   init(options) {
     const retry = helper.retry(options);
     const delay = helper.delay(options);
+    const retryStrategy = helper.retryStrategy(options);
+    const delayStrategy = helper.delayStrategy(options);
+    const errorStrategy = helper.errorStrategy(options);
     const fullResponse = options.fullResponse || false;
     helper.qs(options);
     helper.auth(options);
     helper.body(options);
     helper.delete(options);
-    return { retry, delay, fullResponse };
+    return { retry, delay, fullResponse, retryStrategy, delayStrategy, errorStrategy };
+  },
+
+  updateOptions(options, retry, delay, fullResponse, retryStrategy, errorStrategy) {
+    options.retry = retry - 1;
+    options.delay = delay;
+    options.fullResponse = fullResponse;
+    options.retryStrategy = retryStrategy;
+    options.errorStrategy = errorStrategy;
+  },
+
+  reject(response, error, full) {
+    if (error) {
+      throw error;
+    }
+    throw new StatusCodeError(response, full);
+  },
+
+  resolve(response, full) {
+    if (full) {
+      return response;
+    } else {
+      return helper.json(response.body);
+    }
   }
 
 };
 
 const request = {
 
+  defaults,
+  phin,
+
   /**
    * @param {RequestOptions} options
    */
   get(options) {
     options.method = 'GET';
-    return this.__fetch( options);
+    return this.__fetch(options);
   },
 
   /**
@@ -171,35 +248,25 @@ const request = {
     return this.__fetch(options);
   },
 
-  __fetch(opts) {
+  async __fetch(opts) {
     const options = typeof opts === 'string' ? { url: opts, method: 'GET' } : opts;
-    const { retry, delay, fullResponse } = helper.init(options);
-    return phin(options)
-      .then(async res => {
-        if (res.statusCode < 200 || res.statusCode >= 300) {
-          if (retry > 0) {
-            options.retry = retry - 1;
-            options.delay = delay;
-            options.fullResponse = fullResponse;
-            await helper.sleep(delay);
-            return this[options.method.toLowerCase()](options);
-          } else {
-            const error = new StatusCodeError(res);
-            if (fullResponse) {
-              error.response = res;
-            } else {
-              error.body = helper.json(res.body);
-            }
-            return Promise.reject(error);
-          }
-        } else {
-          if (fullResponse) {
-            return Promise.resolve(res);
-          } else {
-            return Promise.resolve(helper.json(res.body));
-          }
-        }
-      });
+    const { retry, delay, fullResponse, retryStrategy, delayStrategy, errorStrategy } = helper.init(options);
+    let res, err;
+    try {
+      res = await phin(options);
+    } catch (error) {
+      err = error;
+    }
+    if (retryStrategy(res, err, options) && retry > 0) {
+      helper.updateOptions(options, retry, delay, fullResponse, retryStrategy, errorStrategy);
+      await helper.sleep(delayStrategy(res, err, options, delay));
+      return this[options.method.toLowerCase()](options);
+    }
+    if (errorStrategy(res, err, options)) {
+      return helper.reject(res, err, fullResponse);
+    } else {
+      return helper.resolve(res, fullResponse);
+    }
   }
 
 };
