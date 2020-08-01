@@ -256,6 +256,7 @@ test('GET - updated default retry & delays', async () => {
 });
 
 test('GET - 500 response', async () => {
+  request.defaults.delay = 1;
   pactum.mock.addDefaultMockInteraction({
     withRequest: {
       method: 'GET',
@@ -279,6 +280,7 @@ test('GET - 500 response', async () => {
 });
 
 test('Network Error', async () => {
+  request.defaults.delay = 1;
   let err;
   try {
     await request.get('http://localhost:3241');

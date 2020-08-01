@@ -175,6 +175,7 @@ const helper = {
 const request = {
 
   defaults,
+  phin,
 
   /**
    * @param {RequestOptions} options
