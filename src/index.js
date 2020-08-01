@@ -5,6 +5,7 @@ const phin = require('phin');
  * @property {number} [retry] - max retries on failures - defaults to 1
  * @property {number} [delay] - delay in ms between retries - defaults to 100ms
  * @property {function} [retryStrategy] - custom retry strategy function
+ * @property {function} [delayStrategy] - custom delay strategy function
  * @property {function} [errorStrategy] - custom error strategy function
  * @property {object} [qs] - key-value pairs of query parameters
  * @property {object} [auth] - auth object
