@@ -278,4 +278,14 @@ test('GET - 500 response', async () => {
   assert.equal(response.body, 'error');
 });
 
+test('Network Error', async () => {
+  let err;
+  try {
+    await request.get('http://localhost:3241');
+  } catch (error) {
+    err = error;
+  }
+  assert.equal(err.code, 'ECONNREFUSED');
+});
+
 test.run();

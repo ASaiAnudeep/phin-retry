@@ -30,9 +30,35 @@ class StatusCodeError extends Error {
   }
 }
 
+const strategies = {
+  
+  retry(response, error) {
+    if (error) {
+      return true;
+    }
+    if (response.statusCode >= 500) {
+      return true;
+    }
+    return false;
+  },
+
+  error(response, error) {
+    if (error) {
+      return true;
+    }
+    if (response.statusCode < 200 || response.statusCode >= 300) {
+      return true;
+    }
+    return false;
+  }
+
+};
+
 const defaults = {
   retry: 1,
-  delay: 100
+  delay: 100,
+  retryStrategy: strategies.retry,
+  errorStrategy: strategies.error
 };
 
 const helper = {
@@ -121,6 +147,27 @@ const helper = {
     helper.body(options);
     helper.delete(options);
     return { retry, delay, fullResponse };
+  },
+
+  updateOptions(options, retry, delay, fullResponse) {
+    options.retry = retry - 1;
+    options.delay = delay;
+    options.fullResponse = fullResponse;
+  },
+
+  reject(response, error, full) {
+    if (error) {
+      throw error;
+    }
+    throw new StatusCodeError(response, full);
+  },
+
+  resolve(response, full) {
+    if (full) {
+      return response;
+    } else {
+      return helper.json(response.body);
+    }
   }
 
 };
@@ -134,7 +181,7 @@ const request = {
    */
   get(options) {
     options.method = 'GET';
-    return this.__fetch( options);
+    return this.__fetch(options);
   },
 
   /**
@@ -177,29 +224,25 @@ const request = {
     return this.__fetch(options);
   },
 
-  __fetch(opts) {
+  async __fetch(opts) {
     const options = typeof opts === 'string' ? { url: opts, method: 'GET' } : opts;
     const { retry, delay, fullResponse } = helper.init(options);
-    return phin(options)
-      .then(async res => {
-        if (res.statusCode < 200 || res.statusCode >= 300) {
-          if (retry > 0) {
-            options.retry = retry - 1;
-            options.delay = delay;
-            options.fullResponse = fullResponse;
-            await helper.sleep(delay);
-            return this[options.method.toLowerCase()](options);
-          } else {
-            throw new StatusCodeError(res, fullResponse);
-          }
-        } else {
-          if (fullResponse) {
-            return Promise.resolve(res);
-          } else {
-            return Promise.resolve(helper.json(res.body));
-          }
-        }
-      });
+    let res, err;
+    try {
+      res = await phin(options);
+    } catch (error) {
+      err = error;
+    }
+    if (this.defaults.retryStrategy(res, err, options) && retry > 0) {
+      helper.updateOptions(options, retry, delay, fullResponse);
+      await helper.sleep(delay);
+      return this[options.method.toLowerCase()](options);
+    }
+    if (this.defaults.errorStrategy(res, err, options)) {
+      return helper.reject(res, err, fullResponse);
+    } else {
+      return helper.resolve(res, fullResponse);
+    }
   }
 
 };
