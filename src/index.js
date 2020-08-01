@@ -44,6 +44,13 @@ const strategies = {
     return false;
   },
 
+  delay(response, error, options, delay) {
+    if (error && delay === defaults.delay) {
+      return defaults.networkErrorDelay;
+    }
+    return delay;
+  },
+
   error(response, error) {
     if (error) {
       return true;
@@ -59,7 +66,9 @@ const strategies = {
 const defaults = {
   retry: 1,
   delay: 100,
+  networkErrorDelay: 1000,
   retryStrategy: strategies.retry,
+  delayStrategy: strategies.delay,
   errorStrategy: strategies.error
 };
 
@@ -72,9 +81,8 @@ const helper = {
   string(buffer) {
     if (buffer instanceof Buffer) {
       return buffer.toString();
-    } else {
-      return buffer;
     }
+    return buffer;
   },
 
   json(data) {
@@ -96,6 +104,10 @@ const helper = {
 
   retryStrategy(options) {
     return typeof options.retryStrategy === 'function' ? options.retryStrategy : defaults.retryStrategy;
+  },
+
+  delayStrategy(options) {
+    return typeof options.delayStrategy === 'function' ? options.delayStrategy : defaults.delayStrategy;
   },
 
   errorStrategy(options) {
@@ -139,6 +151,7 @@ const helper = {
     delete options.auth;
     delete options.body;
     delete options.retryStrategy;
+    delete options.delayStrategy;
     delete options.errorStrategy;
   },
 
@@ -146,13 +159,14 @@ const helper = {
     const retry = helper.retry(options);
     const delay = helper.delay(options);
     const retryStrategy = helper.retryStrategy(options);
+    const delayStrategy = helper.delayStrategy(options);
     const errorStrategy = helper.errorStrategy(options);
     const fullResponse = options.fullResponse || false;
     helper.qs(options);
     helper.auth(options);
     helper.body(options);
     helper.delete(options);
-    return { retry, delay, fullResponse, retryStrategy, errorStrategy };
+    return { retry, delay, fullResponse, retryStrategy, delayStrategy, errorStrategy };
   },
 
   updateOptions(options, retry, delay, fullResponse, retryStrategy, errorStrategy) {
@@ -235,7 +249,7 @@ const request = {
 
   async __fetch(opts) {
     const options = typeof opts === 'string' ? { url: opts, method: 'GET' } : opts;
-    const { retry, delay, fullResponse, retryStrategy, errorStrategy } = helper.init(options);
+    const { retry, delay, fullResponse, retryStrategy, delayStrategy, errorStrategy } = helper.init(options);
     let res, err;
     try {
       res = await phin(options);
@@ -244,7 +258,7 @@ const request = {
     }
     if (retryStrategy(res, err, options) && retry > 0) {
       helper.updateOptions(options, retry, delay, fullResponse, retryStrategy, errorStrategy);
-      await helper.sleep(delay);
+      await helper.sleep(delayStrategy(res, err, options, delay));
       return this[options.method.toLowerCase()](options);
     }
     if (errorStrategy(res, err, options)) {

@@ -15,6 +15,7 @@ test.after(() => {
 test.after.each(() => {
   request.defaults.retry = 1;
   request.defaults.delay = 100;
+  request.defaults.networkErrorDelay = 1000;
   pactum.mock.clearDefaultInteractions();
 });
 
@@ -327,7 +328,8 @@ test('GET - 400 client error - custom retry strategy', async () => {
   try {
     await request.get({
       url: 'http://localhost:9393/api/get',
-      retryStrategy: () => true
+      retryStrategy: () => true,
+      fullResponse: true
     });
   } catch (error) {
     response = error;
@@ -350,16 +352,30 @@ test('GET - custom error strategy', async () => {
   });
   const response = await request.get({
     url: 'http://localhost:9393/api/get',
-    errorStrategy: () => false
+    errorStrategy: () => false,
+    fullResponse: true
   });
-  assert.equal(response, 'output');
+  assert.equal(response.body.toString(), 'output');
 });
 
 test('Network Error', async () => {
-  request.defaults.delay = 1;
+  request.defaults.networkErrorDelay = 1;
   let err;
   try {
     await request.get('http://localhost:3241');
+  } catch (error) {
+    err = error;
+  }
+  assert.equal(err.code, 'ECONNREFUSED');
+});
+
+test('Network Error - overriding default network delay', async () => {
+  let err;
+  try {
+    await request.get({
+      url: 'http://localhost:3241',
+      delay: 2
+    });
   } catch (error) {
     err = error;
   }
