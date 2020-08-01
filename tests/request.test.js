@@ -13,6 +13,8 @@ test.after(() => {
 });
 
 test.after.each(() => {
+  request.defaults.retry = 1;
+  request.defaults.delay = 100;
   pactum.mock.clearDefaultInteractions();
 });
 
@@ -224,6 +226,56 @@ test('HEAD - request', async () => {
   const response = await request.head({
     url: 'http://localhost:9393/api/head'
   });
+});
+
+test('GET - updated default retry & delays', async () => {
+  pactum.mock.addDefaultMockInteraction({
+    withRequest: {
+      method: 'GET',
+      path: '/api/get'
+    },
+    willRespondWith: {
+      onCall: {
+        0: {
+          status: 500
+        },
+        1: {
+          status: 500
+        },
+        2: {
+          status: 200,
+          body: 'output'
+        }
+      }
+    }
+  });
+  request.defaults.retry = 2;
+  request.defaults.delay = 2;
+  const response = await request.get('http://localhost:9393/api/get');
+  assert.equal(response, 'output');
+});
+
+test('GET - 500 response', async () => {
+  pactum.mock.addDefaultMockInteraction({
+    withRequest: {
+      method: 'GET',
+      path: '/api/get'
+    },
+    willRespondWith: {
+      status: 500,
+      body: 'error'
+    }
+  });
+  let response;
+  try {
+    await request.get('http://localhost:9393/api/get');
+  } catch (error) {
+    response = error;
+  }
+  assert.equal(response.name, 'StatusCodeError');
+  assert.equal(response.statusCode, 500);
+  assert.equal(response.statusMessage, 'Internal Server Error');
+  assert.equal(response.body, 'error');
 });
 
 test.run();

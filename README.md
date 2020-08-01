@@ -1,5 +1,8 @@
 # phin-retry
 
+![Build](https://github.com/ASaiAnudeep/phin-retry/workflows/Build/badge.svg?branch=master)
+![Coverage](https://img.shields.io/codeclimate/coverage/ASaiAnudeep/phin-retry)
+
 The ultra-lightweight Node.js HTTP client.
 
 > This is a wrapper around [Phin](https://github.com/ethanent/phin) that adds support for retry & looks like [request-promise](https://github.com/request/request-promise).

@@ -8,7 +8,7 @@
   ],
   "scripts": {
     "test": "uvu tests",
-    "test:coverage": "c8 --include=src npm test && c8 report --reporter=text-lcov > coverage/lcov.info"
+    "coverage": "c8 --include=src npm test && c8 report --reporter=text-lcov > coverage/lcov.info"
   },
   "repository": {
     "type": "git",

@@ -17,15 +17,23 @@ const phin = require('phin');
  */
 
 class StatusCodeError extends Error {
-  constructor(response) {
-    super(response.statusCode + `${response.statusMessage ? ` - ${response.statusMessage}` : ''}`);
+  constructor(response, fullResponse) {
+    const message = response.statusMessage ? response.statusMessag : '';
+    super(`${response.statusCode} - ${message}`);
     this.name = this.constructor.name;
     this.statusCode = response.statusCode;
+    this.statusMessage = response.statusMessage;
+    this.body = helper.json(response.body);
+    if (fullResponse) {
+      this.response = response;
+    }
   }
 }
 
-const DEFAULT_RETRY = 1;
-const DEFAULT_DELAY = 100;
+const defaults = {
+  retry: 1,
+  delay: 100
+};
 
 const helper = {
 
@@ -53,20 +61,16 @@ const helper = {
   retry(options) {
     if (typeof options.retry === 'number') {
       return options.retry;
-    } else if (typeof process.env.PHIN_RETRY === 'number') {
-      return process.env.PHIN_RETRY;
     } else {
-      return DEFAULT_RETRY;
+      return defaults.retry;
     }
   },
 
   delay(options) {
     if (typeof options.delay === 'number') {
       return options.delay;
-    } else if (typeof process.env.PHIN_DELAY === 'number') {
-      return process.env.PHIN_DELAY;
     } else {
-      return DEFAULT_DELAY;
+      return defaults.delay;
     }
   },
 
@@ -122,6 +126,8 @@ const helper = {
 };
 
 const request = {
+
+  defaults,
 
   /**
    * @param {RequestOptions} options
@@ -184,13 +190,7 @@ const request = {
             await helper.sleep(delay);
             return this[options.method.toLowerCase()](options);
           } else {
-            const error = new StatusCodeError(res);
-            if (fullResponse) {
-              error.response = res;
-            } else {
-              error.body = helper.json(res.body);
-            }
-            return Promise.reject(error);
+            throw new StatusCodeError(res, fullResponse);
           }
         } else {
           if (fullResponse) {
