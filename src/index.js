@@ -35,7 +35,7 @@ class StatusCodeError extends Error {
 
 const strategies = {
   
-  retry(response, error) {
+  retry({response, error}) {
     if (error) {
       return true;
     }
@@ -45,14 +45,14 @@ const strategies = {
     return false;
   },
 
-  delay(response, error, options, delay) {
+  delay({error, delay}) {
     if (error && delay === defaults.delay) {
       return defaults.networkErrorDelay;
     }
     return delay;
   },
 
-  error(response, error) {
+  error({response, error}) {
     if (error) {
       return true;
     }
@@ -170,7 +170,7 @@ const helper = {
     return { retry, delay, fullResponse, retryStrategy, delayStrategy, errorStrategy };
   },
 
-  updateOptions(options, retry, delay, fullResponse, retryStrategy, errorStrategy) {
+  updateOptions({options, retry, delay, fullResponse, retryStrategy, errorStrategy}) {
     options.retry = retry - 1;
     options.delay = delay;
     options.fullResponse = fullResponse;
@@ -248,24 +248,27 @@ const request = {
     return this.__fetch(options);
   },
 
+  /**
+   * @private
+   */
   async __fetch(opts) {
     const options = typeof opts === 'string' ? { url: opts, method: 'GET' } : opts;
     const { retry, delay, fullResponse, retryStrategy, delayStrategy, errorStrategy } = helper.init(options);
-    let res, err;
+    let response, error;
     try {
-      res = await phin(options);
-    } catch (error) {
-      err = error;
+      response = await phin(options);
+    } catch (err) {
+      error = err;
     }
-    if (retryStrategy(res, err, options) && retry > 0) {
-      helper.updateOptions(options, retry, delay, fullResponse, retryStrategy, errorStrategy);
-      await helper.sleep(delayStrategy(res, err, options, delay));
+    if (retryStrategy({response, error, options}) && retry > 0) {
+      helper.updateOptions({options, retry, delay, fullResponse, retryStrategy, errorStrategy});
+      await helper.sleep(delayStrategy({response, error, options, delay}));
       return this[options.method.toLowerCase()](options);
     }
-    if (errorStrategy(res, err, options)) {
-      return helper.reject(res, err, fullResponse);
+    if (errorStrategy({response, error, options})) {
+      return helper.reject(response, error, fullResponse);
     } else {
-      return helper.resolve(res, fullResponse);
+      return helper.resolve(response, fullResponse);
     }
   }
 
