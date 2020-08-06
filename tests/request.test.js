@@ -265,7 +265,7 @@ test('GET - 500 response', async () => {
     },
     willRespondWith: {
       status: 500,
-      body: 'error'
+      body: 'Some Error'
     }
   });
   let response;
@@ -277,7 +277,8 @@ test('GET - 500 response', async () => {
   assert.equal(response.name, 'StatusCodeError');
   assert.equal(response.statusCode, 500);
   assert.equal(response.statusMessage, 'Internal Server Error');
-  assert.equal(response.body, 'error');
+  assert.equal(response.body, 'Some Error');
+  assert.equal(response.toString(), 'StatusCodeError: 500 - Some Error');
 });
 
 test('GET - 400 client error - should not retry', async () => {

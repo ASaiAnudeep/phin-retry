@@ -1,6 +1,6 @@
 {
   "name": "phin-retry",
-  "version": "1.0.2",
+  "version": "1.0.3",
   "description": "The ultra-lightweight Node.js HTTP client",
   "main": "src/index.js",
   "files": [

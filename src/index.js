@@ -21,8 +21,7 @@ const phin = require('phin');
 
 class StatusCodeError extends Error {
   constructor(response, fullResponse) {
-    const message = response.statusMessage ? response.statusMessag : '';
-    super(`${response.statusCode} - ${message}`);
+    super(`${response.statusCode} - ${helper.string(response.body)}`);
     this.name = this.constructor.name;
     this.statusCode = response.statusCode;
     this.statusMessage = response.statusMessage;
