@@ -1,41 +1,35 @@
-const pactum = require('pactum');
+const mock = require('pactum').mock;
 const test = require('uvu').test;
 const assert = require('uvu/assert');
 
 const request = require('../src/index');
 
 test.before(() => {
-  return pactum.mock.start();
+  return mock.start();
 });
 
 test.after(() => {
-  return pactum.mock.stop();
+  return mock.stop();
 });
 
 test.after.each(() => {
   request.defaults.retry = 1;
   request.defaults.delay = 100;
   request.defaults.networkErrorDelay = 1000;
-  pactum.mock.clearDefaultInteractions();
+  mock.reset();
 });
 
 test('GET - text response', async () => {
-  pactum.mock.addDefaultMockInteraction({
-    withRequest: {
-      method: 'GET',
-      path: '/api/get'
-    },
-    willRespondWith: {
-      status: 200,
-      body: 'output'
-    }
+  mock.addInteraction({
+    get: '/api/get',
+    return: 'output'
   });
   const response = await request.get('http://localhost:9393/api/get');
   assert.equal(response, 'output');
 });
 
 test('GET - with default retry & custom delay', async () => {
-  pactum.mock.addDefaultMockInteraction({
+  mock.addMockInteraction({
     withRequest: {
       method: 'GET',
       path: '/api/get'
@@ -60,7 +54,7 @@ test('GET - with default retry & custom delay', async () => {
 });
 
 test('GET - with qs & custom retry & delay', async () => {
-  pactum.mock.addDefaultMockInteraction({
+  mock.addMockInteraction({
     withRequest: {
       method: 'GET',
       path: '/api/get',
@@ -97,7 +91,7 @@ test('GET - with qs & custom retry & delay', async () => {
 });
 
 test('POST - with JSON body', async () => {
-  pactum.mock.addDefaultMockInteraction({
+  mock.addMockInteraction({
     withRequest: {
       method: 'POST',
       path: '/api/post',
@@ -118,7 +112,7 @@ test('POST - with JSON body', async () => {
 });
 
 test('PUT - with text body', async () => {
-  pactum.mock.addDefaultMockInteraction({
+  mock.addMockInteraction({
     withRequest: {
       method: 'PUT',
       path: '/api/put',
@@ -137,7 +131,7 @@ test('PUT - with text body', async () => {
 });
 
 test('DELETE - with auth & returns JSON', async () => {
-  pactum.mock.addDefaultMockInteraction({
+  mock.addMockInteraction({
     withRequest: {
       method: 'DELETE',
       path: '/api/delete',
@@ -163,7 +157,7 @@ test('DELETE - with auth & returns JSON', async () => {
 });
 
 test('DELETE - with core & auth', async () => {
-  pactum.mock.addDefaultMockInteraction({
+  mock.addMockInteraction({
     withRequest: {
       method: 'DELETE',
       path: '/api/delete',
@@ -190,7 +184,7 @@ test('DELETE - with core & auth', async () => {
 });
 
 test('PATCH - with headers', async () => {
-  pactum.mock.addDefaultMockInteraction({
+  mock.addMockInteraction({
     withRequest: {
       method: 'PATCH',
       path: '/api/patch',
@@ -215,7 +209,7 @@ test('PATCH - with headers', async () => {
 });
 
 test('HEAD - request', async () => {
-  pactum.mock.addDefaultMockInteraction({
+  mock.addMockInteraction({
     withRequest: {
       method: 'HEAD',
       path: '/api/head'
@@ -230,7 +224,7 @@ test('HEAD - request', async () => {
 });
 
 test('GET - updated default retry & delays', async () => {
-  pactum.mock.addDefaultMockInteraction({
+  mock.addMockInteraction({
     withRequest: {
       method: 'GET',
       path: '/api/get'
@@ -258,7 +252,7 @@ test('GET - updated default retry & delays', async () => {
 
 test('GET - 500 response', async () => {
   request.defaults.delay = 1;
-  pactum.mock.addDefaultMockInteraction({
+  mock.addMockInteraction({
     withRequest: {
       method: 'GET',
       path: '/api/get'
@@ -283,7 +277,7 @@ test('GET - 500 response', async () => {
 
 test('GET - 400 client error - should not retry', async () => {
   request.defaults.delay = 1;
-  pactum.mock.addDefaultMockInteraction({
+  mock.addMockInteraction({
     withRequest: {
       method: 'GET',
       path: '/api/get'
@@ -311,7 +305,7 @@ test('GET - 400 client error - should not retry', async () => {
 
 test('GET - 400 client error - custom retry strategy', async () => {
   request.defaults.delay = 1;
-  pactum.mock.addDefaultMockInteraction({
+  mock.addMockInteraction({
     withRequest: {
       method: 'GET',
       path: '/api/get'
@@ -341,7 +335,7 @@ test('GET - 400 client error - custom retry strategy', async () => {
 });
 
 test('GET - custom error strategy', async () => {
-  pactum.mock.addDefaultMockInteraction({
+  mock.addMockInteraction({
     withRequest: {
       method: 'GET',
       path: '/api/get'
