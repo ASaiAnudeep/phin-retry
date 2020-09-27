@@ -16,13 +16,19 @@ test.after.each(() => {
   request.defaults.retry = 1;
   request.defaults.delay = 100;
   request.defaults.networkErrorDelay = 1000;
-  mock.reset();
+  mock.clearInteractions();
 });
 
 test('GET - text response', async () => {
-  mock.addInteraction({
-    get: '/api/get',
-    return: 'output'
+  mock.addMockInteraction({
+    withRequest: {
+      method: 'GET',
+      path: '/api/get'
+    },
+    willRespondWith: {
+      status: 200,
+      body: 'output'
+    }
   });
   const response = await request.get('http://localhost:9393/api/get');
   assert.equal(response, 'output');
