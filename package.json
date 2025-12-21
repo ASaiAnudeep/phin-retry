@@ -1,6 +1,6 @@
 {
   "name": "phin-retry",
-  "version": "1.0.3",
+  "version": "2.0.0",
   "description": "The ultra-lightweight Node.js HTTP client",
   "main": "src/index.js",
   "files": [
@@ -34,7 +34,7 @@
   },
   "homepage": "https://github.com/ASaiAnudeep/phin-retry#readme",
   "dependencies": {
-    "phin": "^3.4.1"
+    "phinx": "1.1.0"
   },
   "engines": {
     "node": ">=8"

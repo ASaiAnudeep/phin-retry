@@ -1,4 +1,4 @@
-const phin = require('phin');
+const phin = require('phinx');
 
 /**
  * @typedef {object} WrapperOptions
@@ -16,7 +16,7 @@ const phin = require('phin');
  */
 
 /**
- * @typedef {phin.IJSONResponseOptions & WrapperOptions} RequestOptions
+ * @typedef {phinx.IJSONResponseOptions & WrapperOptions} RequestOptions
  */
 
 class StatusCodeError extends Error {
@@ -33,7 +33,7 @@ class StatusCodeError extends Error {
 }
 
 const strategies = {
-  
+
   retry({response, error}) {
     if (error) {
       return true;
