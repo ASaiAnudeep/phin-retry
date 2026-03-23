@@ -20,12 +20,12 @@ test.after.each(() => {
 });
 
 test('GET - text response', async () => {
-  mock.addMockInteraction({
-    withRequest: {
+  mock.addInteraction({
+    request: {
       method: 'GET',
       path: '/api/get'
     },
-    willRespondWith: {
+    response: {
       status: 200,
       body: 'output'
     }
@@ -35,21 +35,23 @@ test('GET - text response', async () => {
 });
 
 test('GET - with default retry & custom delay', async () => {
-  mock.addMockInteraction({
-    withRequest: {
+  mock.addInteraction({
+    request: {
       method: 'GET',
       path: '/api/get'
     },
-    willRespondWith: {
-      onCall: {
-        0: {
-          status: 500
-        },
-        1: {
-          status: 200,
-          body: 'output'
-        }
-      }
+    response: {
+      status: 500
+    }
+  });
+  mock.addInteraction({
+    request: {
+      method: 'GET',
+      path: '/api/get'
+    },
+    response: {
+      status: 200,
+      body: 'output'
     }
   });
   const response = await request.get({
@@ -60,28 +62,44 @@ test('GET - with default retry & custom delay', async () => {
 });
 
 test('GET - with qs & custom retry & delay', async () => {
-  mock.addMockInteraction({
-    withRequest: {
+  mock.addInteraction({
+    request: {
       method: 'GET',
       path: '/api/get',
-      query: {
+      queryParams: {
         user: 'bob',
         age: '23'
       }
     },
-    willRespondWith: {
-      onCall: {
-        0: {
-          status: 500
-        },
-        1: {
-          status: 500
-        },
-        2: {
-          status: 200,
-          body: 'output'
-        }
+    response: {
+      status: 500
+    }
+  });
+  mock.addInteraction({
+    request: {
+      method: 'GET',
+      path: '/api/get',
+      queryParams: {
+        user: 'bob',
+        age: '23'
       }
+    },
+    response: {
+      status: 500
+    }
+  });
+  mock.addInteraction({
+    request: {
+      method: 'GET',
+      path: '/api/get',
+      queryParams: {
+        user: 'bob',
+        age: '23'
+      }
+    },
+    response: {
+      status: 200,
+      body: 'output'
     }
   });
   const response = await request.get({
@@ -97,15 +115,15 @@ test('GET - with qs & custom retry & delay', async () => {
 });
 
 test('POST - with JSON body', async () => {
-  mock.addMockInteraction({
-    withRequest: {
+  mock.addInteraction({
+    request: {
       method: 'POST',
       path: '/api/post',
       body: {
         msg: 'input'
       }
     },
-    willRespondWith: {
+    response: {
       status: 200,
       body: 'output'
     }
@@ -118,13 +136,13 @@ test('POST - with JSON body', async () => {
 });
 
 test('PUT - with text body', async () => {
-  mock.addMockInteraction({
-    withRequest: {
+  mock.addInteraction({
+    request: {
       method: 'PUT',
       path: '/api/put',
       body: 'input'
     },
-    willRespondWith: {
+    response: {
       status: 200,
       body: 'output'
     }
@@ -137,15 +155,15 @@ test('PUT - with text body', async () => {
 });
 
 test('DELETE - with auth & returns JSON', async () => {
-  mock.addMockInteraction({
-    withRequest: {
+  mock.addInteraction({
+    request: {
       method: 'DELETE',
       path: '/api/delete',
       headers: {
         authorization: 'Basic dXNlcjpwYXNz'
       }
     },
-    willRespondWith: {
+    response: {
       status: 200,
       body: {
         msg: 'deleted'
@@ -163,15 +181,15 @@ test('DELETE - with auth & returns JSON', async () => {
 });
 
 test('DELETE - with core & auth', async () => {
-  mock.addMockInteraction({
-    withRequest: {
+  mock.addInteraction({
+    request: {
       method: 'DELETE',
       path: '/api/delete',
       headers: {
         authorization: 'Basic dXNlcjpwYXNz'
       }
     },
-    willRespondWith: {
+    response: {
       status: 200,
       body: {
         msg: 'deleted'
@@ -190,15 +208,15 @@ test('DELETE - with core & auth', async () => {
 });
 
 test('PATCH - with headers', async () => {
-  mock.addMockInteraction({
-    withRequest: {
+  mock.addInteraction({
+    request: {
       method: 'PATCH',
       path: '/api/patch',
       headers: {
         authorization: 'Basic dXNlcjpwYXNz'
       }
     },
-    willRespondWith: {
+    response: {
       status: 200,
       body: {
         msg: 'patched'
@@ -215,12 +233,12 @@ test('PATCH - with headers', async () => {
 });
 
 test('HEAD - request', async () => {
-  mock.addMockInteraction({
-    withRequest: {
+  mock.addInteraction({
+    request: {
       method: 'HEAD',
       path: '/api/head'
     },
-    willRespondWith: {
+    response: {
       status: 200
     }
   });
@@ -230,24 +248,32 @@ test('HEAD - request', async () => {
 });
 
 test('GET - updated default retry & delays', async () => {
-  mock.addMockInteraction({
-    withRequest: {
+  mock.addInteraction({
+    request: {
       method: 'GET',
       path: '/api/get'
     },
-    willRespondWith: {
-      onCall: {
-        0: {
-          status: 500
-        },
-        1: {
-          status: 500
-        },
-        2: {
-          status: 200,
-          body: 'output'
-        }
-      }
+    response: {
+      status: 500
+    }
+  });
+  mock.addInteraction({
+    request: {
+      method: 'GET',
+      path: '/api/get'
+    },
+    response: {
+      status: 500
+    }
+  });
+  mock.addInteraction({
+    request: {
+      method: 'GET',
+      path: '/api/get'
+    },
+    response: {
+      status: 200,
+      body: 'output'
     }
   });
   request.defaults.retry = 2;
@@ -258,12 +284,12 @@ test('GET - updated default retry & delays', async () => {
 
 test('GET - 500 response', async () => {
   request.defaults.delay = 1;
-  mock.addMockInteraction({
-    withRequest: {
+  mock.addInteraction({
+    request: {
       method: 'GET',
       path: '/api/get'
     },
-    willRespondWith: {
+    response: {
       status: 500,
       body: 'Some Error'
     }
@@ -283,18 +309,14 @@ test('GET - 500 response', async () => {
 
 test('GET - 400 client error - should not retry', async () => {
   request.defaults.delay = 1;
-  mock.addMockInteraction({
-    withRequest: {
+  mock.addInteraction({
+    request: {
       method: 'GET',
       path: '/api/get'
     },
-    willRespondWith: {
-      onCall: {
-        0: {
-          status: 400,
-          body: 'error'
-        }
-      }
+    response: {
+      status: 400,
+      body: 'error'
     }
   });
   let response;
@@ -311,18 +333,14 @@ test('GET - 400 client error - should not retry', async () => {
 
 test('GET - 400 client error - custom retry strategy', async () => {
   request.defaults.delay = 1;
-  mock.addMockInteraction({
-    withRequest: {
+  mock.addInteraction({
+    request: {
       method: 'GET',
       path: '/api/get'
     },
-    willRespondWith: {
-      onCall: {
-        0: {
-          status: 400,
-          body: 'error'
-        }
-      }
+    response: {
+      status: 404,
+      statusMessage: 'Not Found'
     }
   });
   let response;
@@ -341,12 +359,12 @@ test('GET - 400 client error - custom retry strategy', async () => {
 });
 
 test('GET - custom error strategy', async () => {
-  mock.addMockInteraction({
-    withRequest: {
+  mock.addInteraction({
+    request: {
       method: 'GET',
       path: '/api/get'
     },
-    willRespondWith: {
+    response: {
       status: 401,
       body: 'output'
     }

@@ -34,14 +34,14 @@
   },
   "homepage": "https://github.com/ASaiAnudeep/phin-retry#readme",
   "dependencies": {
-    "phinx": "1.1.0"
+    "phinx": "^1.1.0"
   },
   "engines": {
-    "node": ">=8"
+    "node": ">=20"
   },
   "devDependencies": {
-    "c8": "^7.2.1",
-    "pactum": "^2.0.7",
-    "uvu": "^0.3.1"
+    "c8": "^11.0.0",
+    "pactum": "^3.9.1",
+    "uvu": "^0.5.6"
   }
 }
